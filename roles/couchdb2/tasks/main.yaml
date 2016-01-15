@@ -76,14 +76,14 @@
 - name: ensure git is installed
   yum: name=git
 
-- name: checkout the rebar sources from git
-  git: repo=https://github.com/rebar/rebar.git dest=rebar force=yes
+#- name: checkout the rebar sources from git
+#  git: repo=https://github.com/rebar/rebar.git dest=rebar force=yes
 
-- name: compile rebar
-  shell: ./bootstrap chdir=rebar
+#- name: compile rebar
+#  shell: ./bootstrap chdir=rebar
 
-- name: copy the rebar tool to /usr/bin
-  shell: cp rebar/rebar /usr/bin/rebar
+#- name: copy the rebar tool to /usr/bin
+#  shell: cp rebar/rebar /usr/bin/rebar
 
 - name: checkout the CouchDB sources from the git repo
   git: repo=https://github.com/apache/couchdb dest=/tmp/couchdb force=yes
