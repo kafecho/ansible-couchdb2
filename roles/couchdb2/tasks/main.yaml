@@ -1,0 +1,119 @@
+---
+- name: if already installed, ensure CouchDB is not running (otherwise, the Erlang processes get in the way)
+  service: name=couchdb state=stopped
+  ignore_errors: yes
+
+- name: enable the EPEL repo
+  yum: name=epel-release
+
+- name: disable the firewall
+  service: name=iptables state=stopped enabled=no
+
+- name: download the source code for Mozilla SpiderMonkey 1.85
+  get_url: force=no url=http://ftp.mozilla.org/pub/mozilla.org/js/js185-1.0.0.tar.gz dest=/tmp
+
+- name: unarchive the tar file
+  shell: chdir=/tmp tar -xzf js185-1.0.0.tar.gz
+
+- name: ensure zip is installed
+  yum: name=zip
+
+- name: compile Mozilla SpiderMonkey 1.8.5
+  shell: chdir=/tmp/js-1.8.5/js/src {{ item }}
+  with_items:
+  - ./configure
+  - make --silent
+  - make install --silent
+
+- name: copy the SpiderMonkey header files to a location that CouchDB can read.
+  shell: cp -rf /usr/local/include/js /usr/include/js
+
+- name: add a ld.so config for the folder /usr/local/lib
+  copy: src=usrlocal.conf dest=/etc/ld.so.conf.d/usrlocal.conf
+
+- name: run ldconfig
+  shell: /sbin/ldconfig
+
+- name: download Erlang 18 from Erlang Solutions
+  get_url: url=https://packages.erlang-solutions.com/erlang/esl-erlang/FLAVOUR_1_general/esl-erlang_18.2-1~centos~6_amd64.rpm dest=/opt/ force=no
+
+- name: install Erlang 18
+  yum: name=/opt/esl-erlang_18.2-1~centos~6_amd64.rpm
+
+- name: Install libicu-devel
+  yum: name=libicu-devel state=installed
+
+- name: install xz
+  yum: name=xz
+
+- name: download the node.js distribution
+  get_url: force=no url=https://nodejs.org/dist/v4.2.4/node-v4.2.4-linux-x64.tar.xz dest=/opt
+  tags: download_node
+
+- name: untar the node.js distribution
+  shell: tar xf node-v4.2.4-linux-x64.tar.xz chdir=/opt
+  tags: install_node
+
+- name: create the symlinks for the node tools
+  file: path=/usr/bin/{{ item }} src=/opt/node-v4.2.4-linux-x64/bin/{{ item }} state=link
+  with_items:
+  - node
+  - npm
+  tags: link_node
+
+- name: ensure Python pip is installed
+  yum: name=python-pip
+
+- name: ensure sphinx is installed
+  shell: pip install sphinx
+
+- name: ensure Tex is installed
+  yum: name='@Tex Support'
+
+- name: ensure texinfo is installed
+  yum: name=texinfo
+
+- name: ensure git is installed
+  yum: name=git
+
+- name: checkout the rebar sources from git
+  git: repo=https://github.com/rebar/rebar.git dest=rebar force=yes
+
+- name: compile rebar
+  shell: ./bootstrap chdir=rebar
+
+- name: copy the rebar tool to /usr/bin
+  shell: cp rebar/rebar /usr/bin/rebar
+
+- name: checkout the CouchDB sources from the git repo
+  git: repo=https://github.com/apache/couchdb dest=/tmp/couchdb force=yes
+  tags: "checkout_couchdb"
+
+- name: execute configure
+  shell: ./configure --disable-docs chdir=/tmp/couchdb
+  tags: "configure_couchdb"
+  async: 1800
+
+- name: ensure epmd is not running
+  shell: pkill epmd
+  ignore_errors: yes
+
+- name: execute make
+  shell: make chdir=/tmp/couchdb
+  tags: "make_couchdb"
+  async: 1800
+
+- name: execute make install
+  shell: make install chdir=/tmp/couchdb
+
+- name: change the bind ports to allow external access
+  copy: src=local.ini dest=/usr/local/lib/couchdb/etc/local.ini
+
+- name: change the vm.args file
+  template: src=vm.args.j2 dest=/usr/local/lib/couchdb/etc/vm.args
+
+- name: install the sysv script to run CouchDB as a service
+  copy: src=couchdb dest=/etc/init.d/couchdb mode=0755
+
+- name: start CouchDB and ensure it is enabled at boot time
+  service: name=couchdb state=started enabled=yes
