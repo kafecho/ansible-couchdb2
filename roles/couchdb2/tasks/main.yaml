@@ -117,3 +117,25 @@
 
 - name: start CouchDB and ensure it is enabled at boot time
   service: name=couchdb state=started enabled=yes
+
+- name: install httplib2
+  yum: name=python-httplib2
+  tags: install_httplib2
+
+- name: check that we can ping CouchDB on all its ports
+  uri: url=http://127.0.0.1:{{ item }}
+  with_items:
+  - 5986
+  - 5984
+
+- name: add nodes to the cluster
+  uri: status_code=201,409 HEADER_Content-Type="application/json" user=admin password=password force_basic_auth=yes method=POST url=http://127.0.0.1:5984/_cluster_setup body='{"action":"add_node","username":"admin","password":"password","host":"{{ item }}","port":5984}'
+  with_items: groups['couches']
+  when: inventory_hostname == "{{ groups.couches[0] }}" and inventory_hostname != item
+  tags: add_nodes
+
+- name: finish the cluster
+  uri: status_code=201 HEADER_Content-Type="application/json" user=admin password=password force_basic_auth=yes method=POST url=http://127.0.0.1:5984/_cluster_setup body='{"action":"finish_cluster"}'
+  tags: finish_cluster
+  when: inventory_hostname == "{{ groups.couches[0] }}"
+

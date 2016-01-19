@@ -1,3 +1,4 @@
-[couchdb-servers]
-192.168.56.201
-
+#This inventory group lists all the nodes on which we will install CouchDB2
+#Furthermore, the role will automatically configure those nodes to be in a cluster
+[couches]
+10.165.1.3[1:3]

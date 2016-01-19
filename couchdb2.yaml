@@ -1,5 +1,5 @@
 ---
-- hosts: couchdb-servers
+- hosts: couches
   roles:
   - couchdb2
 
