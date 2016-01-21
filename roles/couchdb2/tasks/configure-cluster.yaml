@@ -1,0 +1,10 @@
+---
+- name: add nodes to the cluster
+  uri: status_code=201,409 HEADER_Content-Type="application/json" user=admin password=password force_basic_auth=yes method=POST url=http://127.0.0.1:5984/_cluster_setup body='{"action":"add_node","username":"admin","password":"password","host":"{{ item }}","port":5984}'
+  with_items: groups['couches']
+  when: inventory_hostname == "{{ groups.couches[0] }}" and inventory_hostname != item
+
+- name: finish the cluster
+  uri: status_code=201 HEADER_Content-Type="application/json" user=admin password=password force_basic_auth=yes method=POST url=http://127.0.0.1:5984/_cluster_setup body='{"action":"finish_cluster"}'
+  when: inventory_hostname == "{{ groups.couches[0] }}"
+
