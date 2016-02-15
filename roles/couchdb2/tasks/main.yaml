@@ -18,6 +18,12 @@
 - name: ensure zip is installed
   yum: name=zip
 
+- name: install the 'Development tools' package group
+  yum: name="@Development tools" state=present
+
+- name: install libselinux-python
+  yum: name=libselinux-python
+
 - name: compile Mozilla SpiderMonkey 1.8.5
   shell: chdir=/tmp/js-1.8.5/js/src {{ item }}
   with_items:
