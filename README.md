@@ -20,3 +20,8 @@ The role will then connect all the machines which are in the couches inventory g
 This can be done in your inventory file, or via a command-line parameter, like so :
 
 `ansible-playbook -i inventory -e "configure_cluster=true" couchdb2.yaml`
+
+## Warning
+
+At present, the playbook disables the firewall, so use at your own risk. I am working on an updated version which uses Ansible to poke the correct holes in IPTables.
+
