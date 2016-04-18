@@ -1,5 +1,5 @@
 # ansible-couchdb2
-An Ansible role to deploy CouchDB 2.0 on CentOS.
+An Ansible role to deploy CouchDB 2.0 on CentOS 6.7.
 
 ## Overview
 This repo contains an Ansible role to install CouchDB 2.0 on CentOS 6.7 machines. It's been tested with Ansible 1.9.4.
@@ -9,7 +9,13 @@ The role roughly follows the instructions from the CouchDB 2.0 Release Testing P
 ## In the box
 The role is fairly self explanatory. It installs SpiderMonkey, Erlang, Node.js and then proceeds to build CouchDB 2.0 from the Github sources.
 
-The process take a little while (CouchDB fetches quite a few Git repos), but at the end, you have a running CouchDB 2.0 installed as a Linux service (via a sysv script).
+The process takes a little while (CouchDB fetches quite a few Git repos), but at the end, you have a running CouchDB 2.0 installed as a Linux service (via a sysv script).
+
+## Build a given git version
+
+By default, the role builds the latest (HEAD) git version. You can also specify another version when deploying the role via the git_version variable, like so:
+
+`ansible-playbook -i inventory -e "git_version=a18004d43cdc6924ce6e43a59d058e4cba5b91a1" couchdb2.yaml`
 
 ## Cluster setup
 

@@ -92,7 +92,7 @@
 #  shell: cp rebar/rebar /usr/bin/rebar
 
 - name: checkout the CouchDB sources from the git repo
-  git: repo=https://github.com/apache/couchdb dest=/tmp/couchdb force=yes
+  git: repo=https://github.com/apache/couchdb dest=/tmp/couchdb force=yes version={{ git_version }}
   tags: "checkout_couchdb"
 
 - name: execute configure
