@@ -49,23 +49,11 @@
 - name: Install libicu-devel
   yum: name=libicu-devel state=installed
 
-- name: install xz
-  yum: name=xz
+- name: enable the node release repository for node 4.x
+  yum: name=https://rpm.nodesource.com/pub_4.x/el/6/x86_64/nodesource-release-el6-1.noarch.rpm
 
-- name: download the node.js distribution
-  get_url: force=no url=https://nodejs.org/dist/v4.2.4/node-v4.2.4-linux-x64.tar.xz dest=/opt
-  tags: download_node
-
-- name: untar the node.js distribution
-  shell: tar xf node-v4.2.4-linux-x64.tar.xz chdir=/opt
-  tags: install_node
-
-- name: create the symlinks for the node tools
-  file: path=/usr/bin/{{ item }} src=/opt/node-v4.2.4-linux-x64/bin/{{ item }} state=link
-  with_items:
-  - node
-  - npm
-  tags: link_node
+- name: install node.js
+  yum: name=nodejs
 
 - name: ensure Python pip is installed
   yum: name=python-pip
@@ -73,31 +61,16 @@
 - name: ensure sphinx is installed
   shell: pip install sphinx
 
-- name: ensure Tex is installed
-  yum: name='@Tex Support'
+- name: download a CouchDB 2.0 release candidate
+  get_url: url=https://couchdb-ci.s3-eu-west-1.amazonaws.com/release-candidate/apache-couchdb-2.0.0-{{ release_candidate}}.tar.gz dest=/tmp/
 
-- name: ensure texinfo is installed
-  yum: name=texinfo
-
-- name: ensure git is installed
-  yum: name=git
-
-#- name: checkout the rebar sources from git
-#  git: repo=https://github.com/rebar/rebar.git dest=rebar force=yes
-
-#- name: compile rebar
-#  shell: ./bootstrap chdir=rebar
-
-#- name: copy the rebar tool to /usr/bin
-#  shell: cp rebar/rebar /usr/bin/rebar
-
-- name: checkout the CouchDB sources from the git repo
-  git: repo=https://github.com/apache/couchdb dest=/tmp/couchdb force=yes version={{ git_version }}
-  tags: "checkout_couchdb"
+- name: unarchive the .tar.gz file
+  shell: tar -xvzf apache-couchdb-2.0.0-{{ release_candidate}}.tar.gz chdir=/tmp
+  tags: unarchive
 
 - name: execute configure
-  shell: ./configure --disable-docs chdir=/tmp/couchdb
-  tags: "configure_couchdb"
+  shell: ./configure chdir=/tmp/apache-couchdb-2.0.0-{{ release_candidate}}
+  tags: configure
   async: 1800
 
 - name: ensure epmd is not running
@@ -105,15 +78,23 @@
   ignore_errors: yes
 
 - name: execute make
-  shell: make chdir=/tmp/couchdb
-  tags: "make_couchdb"
-  async: 1800
+  shell: chdir=/tmp/apache-couchdb-2.0.0-{{ release_candidate}} {{ item }}
+  with_items:
+  - make clean
+  - make
+  - make release
+  tags: make
 
-- name: execute make install
-  shell: make install chdir=/tmp/couchdb
+- name: copy the rel/couchdb folder to /usr/local/lib/
+  shell: cp -r /tmp/apache-couchdb-2.0.0-{{ release_candidate}}/rel/couchdb /usr/local/lib
 
-- name: change the bind ports to allow external access
-  copy: src=local.ini dest=/usr/local/lib/couchdb/etc/local.ini
+- name: apply the single node configuration
+  copy: src=single_node.local.ini dest=/usr/local/lib/couchdb/etc/local.ini
+  when: configure_cluster == False
+
+- name: apply the cluster configuration
+  copy: src=cluster.local.ini dest=/usr/local/lib/couchdb/etc/local.ini 
+  when: configure_cluster == True
 
 - name: change the vm.args file
   template: src=vm.args.j2 dest=/usr/local/lib/couchdb/etc/vm.args

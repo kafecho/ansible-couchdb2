@@ -1,4 +1,4 @@
 ---
 magic_cookie: "I like chocolate cookies."
 configure_cluster: false
-git_version: HEAD
+release_candidate: RC4
