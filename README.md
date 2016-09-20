@@ -25,4 +25,6 @@ In Cluster mode, the role automatically creates an admin account (user: admin, p
 
 ## Warning
 
-At present, the playbook disables the firewall, so use at your own risk. I am working on an updated version which uses Ansible to poke the correct holes in IPTables.
+This role is intended to be for experimental use, but feel free to ping me with comments, or even better, submit pull requests.
+
+At present, the playbook disables the firewall, so use at your own risk. In the future, I might be working on an updated version which uses Ansible to poke the correct holes in IPTables.
