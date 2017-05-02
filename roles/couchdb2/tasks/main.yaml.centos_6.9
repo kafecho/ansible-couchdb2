@@ -1,13 +1,13 @@
 ---
-- name: ensure python is installed
-  apt:
-    name: python
-    update_cache: yes
-    state: present
-
 - name: if already installed, ensure CouchDB is not running (otherwise, the Erlang processes get in the way)
   service: name=couchdb state=stopped
   ignore_errors: yes
+
+- name: enable the EPEL repo
+  yum: name=epel-release
+
+- name: disable the firewall
+  service: name=iptables state=stopped enabled=no
 
 - name: download the source code for Mozilla SpiderMonkey 1.85
   get_url: force=no url=http://ftp.mozilla.org/pub/mozilla.org/js/js185-1.0.0.tar.gz dest=/tmp
@@ -16,16 +16,13 @@
   shell: chdir=/tmp tar -xzf js185-1.0.0.tar.gz
 
 - name: ensure zip is installed
-  apt:
-    name: zip
-    update_cache: yes
-    state: present
+  yum: name=zip
 
-- name: install the build-essential
-  apt:
-    name: build-essential
-    update_cache: yes
-    state: present
+- name: install the 'Development tools' package group
+  yum: name="@Development tools" state=present
+
+- name: install libselinux-python
+  yum: name=libselinux-python
 
 - name: compile Mozilla SpiderMonkey 1.8.5
   shell: chdir=/tmp/js-1.8.5/js/src {{ item }}
@@ -43,28 +40,23 @@
 - name: run ldconfig
   shell: /sbin/ldconfig
 
-- name: install dependencies for couchdb
-  apt:
-    name: couchdb
-    state: build-dep
+- name: download Erlang 18 from Erlang Solutions
+  get_url: url=https://packages.erlang-solutions.com/erlang/esl-erlang/FLAVOUR_1_general/esl-erlang_18.2-1~centos~6_amd64.rpm dest=/opt/ force=no
 
-- name: Install libicu-dev
-  apt:
-    name: libicu-dev
-    update_cache: yes
-    state: present
+- name: install Erlang 18
+  yum: name=/opt/esl-erlang_18.2-1~centos~6_amd64.rpm
 
-- name: ensure erlang reltool is installed
-  apt:
-    name: erlang-reltool
-    update_cache: yes
-    state: present
+- name: Install libicu-devel
+  yum: name=libicu-devel state=installed
+
+#- name: enable the node release repository for node 4.x
+#  yum: name=https://rpm.nodesource.com/pub_4.x/el/6/x86_64/nodesource-release-el6-1.noarch.rpm
+
+#- name: install node.js
+#  yum: name=nodejs
 
 - name: ensure Python pip is installed
-  apt:
-    name: python-pip
-    update_cache: yes
-    state: present
+  yum: name=python-pip
 
 - name: ensure sphinx is installed
   shell: pip install sphinx
@@ -113,11 +105,9 @@
 - name: start CouchDB and ensure it is enabled at boot time
   service: name=couchdb state=started enabled=yes
 
-- name: ensure Python httplib2 is installed
-  apt:
-    name: python-httplib2
-    update_cache: yes
-    state: present
+- name: install httplib2
+  yum: name=python-httplib2
+  tags: install_httplib2
 
 - name: check that we can ping CouchDB on all its ports
   uri: url=http://127.0.0.1:{{ item }}
