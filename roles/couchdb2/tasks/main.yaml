@@ -49,11 +49,11 @@
 - name: Install libicu-devel
   yum: name=libicu-devel state=installed
 
-- name: enable the node release repository for node 4.x
-  yum: name=https://rpm.nodesource.com/pub_4.x/el/6/x86_64/nodesource-release-el6-1.noarch.rpm
+#- name: enable the node release repository for node 4.x
+#  yum: name=https://rpm.nodesource.com/pub_4.x/el/6/x86_64/nodesource-release-el6-1.noarch.rpm
 
-- name: install node.js
-  yum: name=nodejs
+#- name: install node.js
+#  yum: name=nodejs
 
 - name: ensure Python pip is installed
   yum: name=python-pip
