@@ -1,5 +1,5 @@
 # ansible-couchdb2
-An Ansible role to deploy a CouchDB 2.0 on Ubuntu 16.04 and Ubuntu 6.x
+An Ansible role to deploy a CouchDB 2.0 on Ubuntu 16.04 and CentOS 6.x
 
 ## Overview
 This repo contains an Ansible role to install CouchDB 2.0 on Ubuntu 16.04 and CentOS 6.x machines. It's been tested with Ansible 2.2.1.0. 
