@@ -1,0 +1,120 @@
+---
+- name: if already installed, ensure CouchDB is not running (otherwise, the Erlang processes get in the way)
+  service: name=couchdb state=stopped
+  ignore_errors: yes
+
+- name: enable the EPEL repo
+  yum: name=epel-release
+
+- name: disable the firewall
+  service: name=iptables state=stopped enabled=no
+
+- name: download the source code for Mozilla SpiderMonkey 1.85
+  get_url: force=no url=http://ftp.mozilla.org/pub/mozilla.org/js/js185-1.0.0.tar.gz dest=/tmp
+
+- name: unarchive the tar file
+  shell: chdir=/tmp tar -xzf js185-1.0.0.tar.gz
+
+- name: ensure zip is installed
+  yum: name=zip
+
+- name: install the 'Development tools' package group
+  yum: name="@Development tools" state=present
+
+- name: install libselinux-python
+  yum: name=libselinux-python
+
+- name: compile Mozilla SpiderMonkey 1.8.5
+  shell: chdir=/tmp/js-1.8.5/js/src {{ item }}
+  with_items:
+  - ./configure
+  - make --silent
+  - make install --silent
+
+- name: copy the SpiderMonkey header files to a location that CouchDB can read.
+  shell: cp -rf /usr/local/include/js /usr/include/js
+
+- name: add a ld.so config for the folder /usr/local/lib
+  copy: src=usrlocal.conf dest=/etc/ld.so.conf.d/usrlocal.conf
+
+- name: run ldconfig
+  shell: /sbin/ldconfig
+
+- name: download Erlang 18 from Erlang Solutions
+  get_url: url=https://packages.erlang-solutions.com/erlang/esl-erlang/FLAVOUR_1_general/esl-erlang_18.2-1~centos~6_amd64.rpm dest=/opt/ force=no
+
+- name: install Erlang 18
+  yum: name=/opt/esl-erlang_18.2-1~centos~6_amd64.rpm
+
+- name: Install libicu-devel
+  yum: name=libicu-devel state=installed
+
+#- name: enable the node release repository for node 4.x
+#  yum: name=https://rpm.nodesource.com/pub_4.x/el/6/x86_64/nodesource-release-el6-1.noarch.rpm
+
+#- name: install node.js
+#  yum: name=nodejs
+
+- name: ensure Python pip is installed
+  yum: name=python-pip
+
+- name: ensure sphinx is installed
+  shell: pip install sphinx
+
+- name: download CouchDB 2.0
+  get_url: url=http://www-eu.apache.org/dist/couchdb/source/2.0.0/apache-couchdb-2.0.0.tar.gz  dest=/tmp/
+
+- name: unarchive the .tar.gz file
+  shell: tar -xvzf apache-couchdb-2.0.0.tar.gz chdir=/tmp
+  tags: unarchive
+
+- name: execute configure
+  shell: ./configure chdir=/tmp/apache-couchdb-2.0.0
+  tags: configure
+  async: 1800
+
+- name: ensure epmd is not running
+  shell: pkill epmd
+  ignore_errors: yes
+
+- name: execute make
+  shell: chdir=/tmp/apache-couchdb-2.0.0 {{ item }}
+  with_items:
+  - make clean
+  - make
+  - make release
+  tags: make
+
+- name: copy the rel/couchdb folder to /usr/local/lib/
+  shell: cp -r /tmp/apache-couchdb-2.0.0/rel/couchdb /usr/local/lib
+
+- name: apply the single node configuration
+  copy: src=single_node.local.ini dest=/usr/local/lib/couchdb/etc/local.ini
+  when: configure_cluster == False
+
+- name: apply the cluster configuration
+  copy: src=cluster.local.ini dest=/usr/local/lib/couchdb/etc/local.ini
+  when: configure_cluster == True
+
+- name: change the vm.args file
+  template: src=vm.args.j2 dest=/usr/local/lib/couchdb/etc/vm.args
+
+- name: install the sysv script to run CouchDB as a service
+  copy: src=couchdb dest=/etc/init.d/couchdb mode=0755
+
+- name: start CouchDB and ensure it is enabled at boot time
+  service: name=couchdb state=started enabled=yes
+
+- name: install httplib2
+  yum: name=python-httplib2
+  tags: install_httplib2
+
+- name: check that we can ping CouchDB on all its ports
+  uri: url=http://127.0.0.1:{{ item }}
+  with_items:
+  - 5986
+  - 5984
+
+- include: configure-cluster.yaml
+  when: configure_cluster
+  tags: configure_cluster
